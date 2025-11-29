@@ -38,7 +38,7 @@ The v-CLR approach uses view-consistent learning to improve open-world instance 
 
 | Loss Component | Original Paper | This Implementation | Status |
 |----------------|---------------|---------------------|--------|
-| **L_sim** | (1/N̄) Σ (1 - cos(q1, q2)) | (1/N̄) Σ (1 - cos(q1, q2)) / temperature | ✅ Matches (with temp scaling) |
+| **L_sim** | (1/N_avg) Σ (1 - cos(q1, q2)) | (1/N_avg) Σ (1 - cos(q1, q2)) / temperature | ✅ Matches (with temp scaling) |
 | **L_obj** | λ1·L_dice + λ2·L_mask + λ3·L_score + λ4·L_box + λ5·L_giou | L1 box alignment | ⚠️ Adapted for CNN |
 | **L_match** | λ_obj·L_obj + λ_sim·L_sim | LAMBDA_OBJ·L_obj + LAMBDA_SIM·L_sim | ✅ Matches |
 | **L_gt** | Same as L_obj with ground truth | L_cls + L_box + L_giou | ⚠️ Adapted for CNN |
