@@ -78,6 +78,29 @@ The paper leverages off-the-shelf image transformations to overwrite appearance 
 - **View selection**: One view randomly selected per sample with equal probability during training
 - **Additional augmentation**: Random cropping and resizing of image patches, integrated with original image to further destroy object appearance
 
+### Object-centric Learning by Object Proposals
+
+High similarity between matched queries does not necessarily mean the model learns informative representations—models can capture shortcut solutions where representations are irrelevant to objects. In open-world learning, lack of correlation with objects causes failure in generalization.
+
+**Solution**: Leverage large-scale pre-trained instance detectors (e.g., CutLER) to provide **object proposals**. These proposals serve as a medium to match object-related queries from both branches, ensuring the learning framework learns meaningful object-oriented representations transferable to open-world settings.
+
+### Object Feature Matching
+
+The matching process forms one-to-one triplets between proposals and predictions from both branches:
+
+**Notation**:
+- **P₁, P₂**: Prediction sets from natural and transformed branches
+- **Pₒ**: Object proposals from pre-trained detector
+- Each set P = {(p̂ᵢ, b̂ᵢ, m̂ᵢ)} contains tuples of:
+  - p̂ᵢ: Classification score
+  - b̂ᵢ: Bounding box
+  - m̂ᵢ: Segmentation mask
+- **Q₁, Q₂**: Query feature sets associated with P₁, P₂ (|Qᵢ| = |Pᵢ|)
+
+**Matching Process**:
+1. For each proposal in Pₒ, find optimal matched predictions P̂₁ and P̂₂ by minimizing matching cost
+2. Form N̄ one-to-one triplets: (Pₒ, P̂₁, P̂₂)
+
 ### Loss Functions (from paper)
 
 | Loss | Formula | Description |
