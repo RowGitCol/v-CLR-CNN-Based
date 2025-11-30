@@ -49,10 +49,24 @@ The v-CLR approach uses view-consistent learning to improve open-world instance 
 
 ## Paper's Methodology (v-CLR)
 
+### Core Principle
+
+Neural networks are biased toward learning appearance information (e.g., texture) to differentiate objects, which inhibits generalization to novel classes with unseen textures. v-CLR overcomes this by learning **appearance-invariant representations** that complement appearance information, making the model generalizable and unbiased during inference.
+
+**The key to this learning framework is to enforce representation consistency by maximizing query feature similarity between transformed views and the natural image.**
+
+### Two-Branch Architecture
+
 Per the paper, v-CLR uses a two-branch architecture:
 
-1. **Natural Image Branch (Teacher)**: Always receives natural images, updated as EMA of transformed branch
-2. **Transformed Image Branch (Student)**: Randomly processes transformed views OR natural image with equal probability
+1. **Natural Image Branch (Teacher)**: Always receives natural images as input. Updated as an exponential moving average (EMA) of the transformed image branch to prevent feature collapsing (following self-supervised learning frameworks).
+
+2. **Transformed Image Branch (Student)**: Randomly processes any of the transformed images OR the original natural image with equal probability.
+
+Both branches use adapted DETR transformer architectures to make sets of predictions, where **each prediction consists of**:
+- A classification score
+- A predicted bounding box
+- A predicted segmentation mask
 
 ### Appearance-Invariant Transformation
 
