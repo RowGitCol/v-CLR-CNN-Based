@@ -4,31 +4,31 @@ This is an attempt at recreating the "v-CLR: View-Consistent Learning for Open-W
 
 ## Overview
 
-The v-CLR approach uses view-consistent learning to improve open-world instance segmentation. This implementation adapts the methodology to use a ConvNeXt-tiny backbone instead of the original MaskDINO/Swin Transformer architecture.
+The v-CLR approach uses view-consistent learning to improve open-world instance segmentation. This implementation adapts the methodology to use a ConvNeXt-tiny backbone instead of the original DeformableDETR/DINO-DETR transformer architecture.
 
 ## Detailed Comparison: Paper vs. CNN Implementation
 
 | Component | Original Paper (Transformer) | This Implementation (CNN) |
 |-----------|------------------------------|---------------------------|
-| **Backbone** | Swin Transformer | ConvNeXt-tiny |
-| **Detection Head** | MaskDINO / Deformable DETR | Dense convolutional heads |
-| **Object Representation** | Learnable object queries (300 queries) | Dense per-pixel predictions |
+| **Backbone** | DeformableDETR / DINO-DETR | ConvNeXt-tiny |
+| **Detection Head** | Transformer decoder with prototypes | Dense convolutional heads |
+| **Object Representation** | Learnable object queries → prototypes | Dense per-pixel predictions |
+| **Mask Generation** | Prototype-pyramid similarity maps | No (bounding boxes only) |
 | **Query Matching** | Hungarian matching (bipartite) | Greedy IoU-based matching |
-| **Mask Prediction** | Yes (dice + mask BCE loss) | No (bounding boxes only) |
 | **Feature Extraction** | Transformer decoder queries | CNN feature map spatial locations |
 | **Attention Mechanism** | Multi-head self/cross attention | Convolutional layers only |
 | **Positional Encoding** | Sinusoidal/learned positional embeddings | Implicit (CNN receptive fields) |
-| **Model Parameters** | ~50M (MaskDINO-R50) | ~28M (ConvNeXt-tiny) |
+| **Model Parameters** | ~50M | ~28M (ConvNeXt-tiny) |
 | **Teacher-Student** | EMA teacher on natural branch | EMA teacher on natural branch ✓ |
 
 ## Key Differences from Original Paper
 
 ### 1. Architecture
-- **Paper**: Uses MaskDINO with Swin Transformer backbone and Deformable DETR decoder. Object queries are learnable vectors that attend to image features through cross-attention.
+- **Paper**: Decorates DeformableDETR and DINO-DETR into an instance segmentation model. Each query predicts a prototype for a corresponding instance, and the model predicts instance segmentation maps by computing similarity between output prototypes and pyramid features of the transformer encoder.
 - **CNN**: Uses ConvNeXt-tiny backbone with dense prediction heads. Each spatial location in the feature map acts as an implicit "query".
 
 ### 2. Object Query System
-- **Paper**: 300 explicit learnable object queries pass through transformer decoder layers. Each query learns to detect one object through the attention mechanism.
+- **Paper**: Learnable object queries pass through transformer decoder layers. Each query predicts a prototype for an instance, with masks generated via prototype-pyramid feature similarity.
 - **CNN**: Dense predictions at every spatial location (e.g., 25×25 = 625 predictions for 800px input). No explicit queries—predictions are spatially anchored.
 
 ### 3. Query Matching Strategy
@@ -36,7 +36,7 @@ The v-CLR approach uses view-consistent learning to improve open-world instance 
 - **CNN**: Greedy IoU-based matching for computational efficiency. May produce suboptimal assignments.
 
 ### 4. Instance Segmentation
-- **Paper**: Full instance segmentation with dice loss and mask BCE/focal loss.
+- **Paper**: Prototype-based instance segmentation. Each query predicts a prototype, and the final mask is computed by measuring similarity between the prototype and pyramid features from the transformer encoder.
 - **CNN**: Bounding box detection only. Proxy rectangular masks used for segmentation metrics.
 
 ### 5. Feature Similarity (L_sim)
@@ -53,6 +53,16 @@ Per the paper, v-CLR uses a two-branch architecture:
 
 1. **Natural Image Branch (Teacher)**: Always receives natural images, updated as EMA of transformed branch
 2. **Transformed Image Branch (Student)**: Randomly processes transformed views OR natural image with equal probability
+
+### Appearance-Invariant Transformation
+
+The paper leverages off-the-shelf image transformations to overwrite appearance while preserving structural content. This circumvents texture bias by enabling the model to learn consistent, transferable representations across different views:
+
+- **Primary transformation**: Colorized depth maps
+- **Auxiliary transformations**: Art-stylizing, edge maps
+- **Three views per sample**: Natural image, colorized depth map, one auxiliary view
+- **View selection**: One view randomly selected per sample with equal probability during training
+- **Additional augmentation**: Random cropping and resizing of image patches, integrated with original image to further destroy object appearance
 
 ### Loss Functions (from paper)
 
@@ -135,6 +145,7 @@ Run the Jupyter notebook `vclr_convnext_rev2_teach_stud_1epoch.ipynb` to train t
 ## References
 
 - v-CLR Paper: [arXiv:2504.01383](https://arxiv.org/abs/2504.01383)
+- DeformableDETR: [Deformable DETR: Deformable Transformers for End-to-End Object Detection](https://arxiv.org/abs/2010.04159)
+- DINO-DETR: [DINO: DETR with Improved DeNoising Anchor Boxes](https://arxiv.org/abs/2203.03605)
 - ConvNeXt: [A ConvNet for the 2020s](https://arxiv.org/abs/2201.03545)
-- MaskDINO: [Towards A Unified Transformer-based Framework for Object Detection and Segmentation](https://arxiv.org/abs/2206.02777)
 - CutLER: [Cut and Learn for Unsupervised Object Detection and Instance Segmentation](https://arxiv.org/abs/2301.11320)
