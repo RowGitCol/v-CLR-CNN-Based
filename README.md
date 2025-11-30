@@ -128,6 +128,102 @@ The training objectives ensure queries capture **object-oriented appearance-inva
 - λ_match = 1.0
 - λ_gt = 1.0
 
+## Detailed Code-to-Paper Analysis
+
+Based on the complete v-CLR paper methodology, here is a detailed analysis of how this CNN implementation differs from the paper:
+
+### ✅ What the Code Implements Correctly
+
+| Paper Component | Code Implementation | Status |
+|-----------------|---------------------|--------|
+| **Two-branch architecture** | `TeacherStudentVCLR` class with `student` and `teacher` | ✅ Correct |
+| **EMA teacher updates** | `update_teacher()` with momentum 0.999 | ✅ Correct |
+| **Natural image branch** | Teacher always processes natural images | ✅ Correct |
+| **Transformed image branch** | Student processes depth/stylized views | ✅ Correct |
+| **View selection** | Random selection between depth and style per batch | ✅ Correct |
+| **L_sim formula** | `cosine_sim_loss()`: (1 - cos(q1, q2)) averaged | ✅ Correct |
+| **L_obj components** | L1 box alignment with proposals | ⚠️ Partial (missing dice/mask) |
+| **L_match structure** | `λ_obj·L_obj + λ_sim·L_sim` | ✅ Correct |
+| **L_gt supervision** | GT loss on student's transformed branch | ✅ Correct |
+| **Total loss** | `L = λ_match·L_match + λ_gt·L_gt` | ✅ Correct |
+| **CutLER proposals** | Loaded from `vCLR_coco_train2017_top5.json` | ✅ Correct |
+| **Object feature matching** | Greedy IoU matching forms triplets | ⚠️ Simplified |
+
+### ❌ Key Differences from Paper
+
+| Paper Component | Paper Description | Code Implementation | Impact |
+|-----------------|-------------------|---------------------|--------|
+| **Architecture** | DeformableDETR/DINO-DETR transformer | ConvNeXt-tiny CNN | **Major**: Different inductive biases |
+| **Object queries** | 300 learnable queries → prototypes | Dense per-pixel predictions (~625) | **Major**: Changes object representation |
+| **Mask prediction** | Prototype-pyramid similarity maps | None (bounding boxes only) | **Major**: Missing L_dice, L_mask |
+| **Matching algorithm** | Hungarian optimal bipartite matching | Greedy IoU-based matching | **Medium**: Suboptimal assignments |
+| **L_obj components** | λ1·L_dice + λ2·L_mask + λ3·L_score + λ4·L_box + λ5·L_GIoU | Only L1 box alignment | **Major**: Missing 4 of 5 components |
+| **Query features** | Transformer decoder query embeddings | CNN spatial feature vectors | **Medium**: Different feature semantics |
+
+### Detailed Loss Function Comparison
+
+**Paper's L_obj** (Equation 1):
+```
+L_obj = λ1·L_dice + λ2·L_mask + λ3·L_score + λ4·L_box + λ5·L_GIoU
+     = 5.0·L_dice + 5.0·L_mask + 4.0·L_score + 5.0·L_box + 2.0·L_GIoU
+```
+
+**Code's L_obj** (in `compute_vclr_losses`):
+```python
+L_obj = F.l1_loss(sel_preds_norm, sel_props_norm)  # Only box L1 alignment
+```
+
+**Missing components**:
+- ❌ `L_dice`: Dice loss for mask prediction
+- ❌ `L_mask`: BCE/focal loss for mask prediction  
+- ❌ `L_score`: Classification score loss against proposals
+- ❌ `L_giou`: GIoU loss for box regression (only in L_gt, not L_obj)
+
+### View Selection Comparison
+
+**Paper**: Randomly selects ONE view per sample with equal probability:
+- 1/3 natural image
+- 1/3 colorized depth map
+- 1/3 auxiliary view (art-stylized or edge)
+
+**Code**: Randomly selects ONE auxiliary view per batch:
+```python
+if has_depth and has_style:
+    if random.random() < 0.5:
+        use_depth, use_style = True, False
+    else:
+        use_depth, use_style = False, True
+```
+Note: The code doesn't include the case where the transformed branch receives the natural image (1/3 probability in paper).
+
+### Matching Process Comparison
+
+**Paper** (Object Feature Matching):
+1. For each proposal in Pₒ, find optimal matched predictions P̂₁ and P̂₂ by minimizing the matching cost (combination of classification, box, and mask losses)
+2. Uses Hungarian algorithm for optimal bipartite matching
+3. Forms N̄ one-to-one triplets: (Pₒ, P̂₁, P̂₂)
+
+**Code** (`match_proposals_to_predictions`):
+```python
+ious = box_iou(proposal_boxes, pred_boxes)
+best_iou, best_idx = ious.max(dim=1)  # Greedy: best pred for each proposal
+keep = best_iou > iou_thresh
+```
+- Greedy matching instead of Hungarian
+- May assign same prediction to multiple proposals
+- Truncated to `max_pairs=32` matches
+
+### Summary of Alignment
+
+| Aspect | Alignment | Notes |
+|--------|-----------|-------|
+| **Core v-CLR principle** | ✅ High | Appearance-invariant learning via view consistency |
+| **Two-branch architecture** | ✅ High | Teacher-student with EMA |
+| **Loss structure** | ⚠️ Medium | Correct formula, missing components |
+| **Feature representation** | ❌ Low | CNN vs transformer queries |
+| **Mask prediction** | ❌ None | Bounding boxes only |
+| **Matching algorithm** | ⚠️ Medium | Greedy vs Hungarian |
+
 ## Implementation Notes
 
 ### What's Preserved from the Paper
