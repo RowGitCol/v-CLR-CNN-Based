@@ -103,13 +103,19 @@ The matching process forms one-to-one triplets between proposals and predictions
 
 ### Loss Functions (from paper)
 
+The training objectives ensure queries capture **object-oriented appearance-invariant representations**:
+
 | Loss | Formula | Description |
 |------|---------|-------------|
-| **L_sim** | (1/N̄) Σ (1 - cos(q1, q2)) | Cosine similarity between matched queries |
-| **L_obj** | λ1·L_dice + λ2·L_mask + λ3·L_score + λ4·L_box + λ5·L_GIoU | Supervision from CutLER proposals |
-| **L_match** | λ_obj·L_obj + λ_sim·L_sim | Matching objective |
-| **L_gt** | Same as L_obj but using ground truth G on transformed branch queries Q̂_2 | Ground truth supervision |
-| **Total** | L = λ_match·L_match + λ_gt·L_gt | Combined loss |
+| **L_sim** | (1/N̄) Σ (1 - cos(q1, q2)) | Cosine similarity between matched queries Q̂₁ and Q̂₂ |
+| **L_obj** | λ1·L_dice + λ2·L_mask + λ3·L_score + λ4·L_box + λ5·L_GIoU | Supervision from object proposals (assumed reliably object-related) |
+| **L_match** | λ_obj·L_obj + λ_sim·L_sim | Total matching objective |
+| **L_gt** | Same as L_obj but using ground truth G instead of proposals Pₒ | Ground truth supervision on transformed branch queries Q̂₂ |
+| **Total** | L = λ_match·L_match + λ_gt·L_gt | Combined training objective |
+
+**Training Flow**:
+1. **Matching objective (L_match)**: Ensures queries capture object-oriented appearance-invariant representations by (a) enforcing similarity between matched queries across views and (b) supervising predictions against object proposals
+2. **Ground truth objective (L_gt)**: Standard segmentation loss using ground truth labels on the optimized transformed image queries Q̂₂
 
 ### Loss Weights (from paper)
 - λ1 (dice) = 5.0
