@@ -51,7 +51,12 @@ Per the paper, v-CLR uses a two-branch architecture:
 - torchvision
 - pycocotools
 - COCO dataset with depth and stylized views
+- Ultralytics API
+- Ultralytics YOLOv11 small-seg checkpoint
+- YOLACT ResNet50 80000 checkpoint
 
 ## Usage
 
-Run the Jupyter notebook `vclr_convnext_rev2_teach_stud_1epoch.ipynb` to train the model.
+Run the Jupyter notebook `vclr_convnext_rev2_teach_stud_6epoch.ipynb` to train a ConvNext Tiny based model.
+Run the Jupyter notebook `vclr_rev6_YoLo.ipynb` to train a YOLOv11s-seg based model.
+Run the Jupyter notebook `vclr_YOLCAT.ipynb` inside a YOLCAT model folder to train a YOLCAT based model.
