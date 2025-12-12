@@ -60,4 +60,4 @@ Per the paper, v-CLR uses a two-branch architecture:
 - Run the Jupyter notebook `vclr_convnext_rev2_teach_stud_6epoch.ipynb` to train a ConvNext Tiny based model.
 - Run the Jupyter notebook `vclr_rev6_YoLo.ipynb` to train a YOLOv11s-seg based model.
 - Run the Jupyter notebook `vclr_YOLCAT.ipynb` inside a YOLCAT model folder to train a YOLCAT based model.
-- Run the code in "YOLOv11s-seg" branch to run an open world evaluation using YOLOv11s-seg on UVO frames.
+- Run the code in "YOLOv11s-seg-stock-evaluation" branch to run an open world evaluation using YOLOv11s-seg on UVO frames.
