@@ -41,7 +41,7 @@ Per the paper, v-CLR uses a two-branch architecture:
 
 ### Known Limitations
 
-1. **No Mask Prediction**: The original v-CLR paper includes instance segmentation masks. This implementation only produces bounding boxes.
+1. **No Hungarian matching**: The original v-CLR paper includes does Hungarian matching for predict and proposed boxes. This implementation uses greedy IoU insted.
 
 2. **Dense vs Query-based**: The paper uses transformer object queries (DETR-style), while this implementation uses dense CNN predictions.
 
@@ -60,3 +60,4 @@ Per the paper, v-CLR uses a two-branch architecture:
 - Run the Jupyter notebook `vclr_convnext_rev2_teach_stud_6epoch.ipynb` to train a ConvNext Tiny based model.
 - Run the Jupyter notebook `vclr_rev6_YoLo.ipynb` to train a YOLOv11s-seg based model.
 - Run the Jupyter notebook `vclr_YOLCAT.ipynb` inside a YOLCAT model folder to train a YOLCAT based model.
+- Run the code in "YOLOv11s-seg" branch to run an open world evaluation using YOLOv11s-seg on UVO frames.
